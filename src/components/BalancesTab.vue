@@ -81,38 +81,25 @@
         </div>
       </div>
 
-      <!-- Raw Owed By: others owe this person -->
-      <template v-if="getOwedBy(b).length">
-        <hr class="divider" style="margin:10px 0 6px" />
-        <div class="dues-header green-label">↑ Owed By (₹{{ fmt(getOwedBy(b).reduce((s,x)=>s+x.total,0)) }})</div>
-        <div v-for="x in getOwedBy(b)" :key="x.id" class="dues-person">
-          <div class="dues-person-row">
-            <span class="dues-person-name">{{ x.name }}</span>
-            <span class="green-text dues-person-amt">₹{{ fmt(x.total) }}</span>
-          </div>
-          <div v-for="(item, i) in x.items" :key="i" class="dues-item">
-            <span class="dues-dot">•</span> {{ item.title }} — ₹{{ fmt(item.amount) }}
-          </div>
+      <!-- Summary: owed by / owed to counts only -->
+      <div class="dues-summary">
+        <div class="dues-pill green-pill" v-if="getOwedBy(b).length">
+          <span class="dues-pill-label">Owed By</span>
+          <span class="dues-pill-amount">₹{{ fmt(getOwedBy(b).reduce((s,x)=>s+x.total,0)) }}</span>
+          <span class="dues-pill-count">{{ getOwedBy(b).length }} {{ getOwedBy(b).length === 1 ? 'person' : 'people' }}</span>
         </div>
-      </template>
-
-      <!-- Raw Owed To: this person owes others -->
-      <template v-if="getOwesTo(b).length">
-        <hr class="divider" style="margin:10px 0 6px" />
-        <div class="dues-header red-label">↓ Owed To (₹{{ fmt(getOwesTo(b).reduce((s,x)=>s+x.total,0)) }})</div>
-        <div v-for="x in getOwesTo(b)" :key="x.id" class="dues-person">
-          <div class="dues-person-row">
-            <span class="dues-person-name">{{ x.name }}</span>
-            <span class="red-text dues-person-amt">₹{{ fmt(x.total) }}</span>
-          </div>
-          <div v-for="(item, i) in x.items" :key="i" class="dues-item">
-            <span class="dues-dot">•</span> {{ item.title }} — ₹{{ fmt(item.amount) }}
-          </div>
+        <div class="dues-pill red-pill" v-if="getOwesTo(b).length">
+          <span class="dues-pill-label">Owes To</span>
+          <span class="dues-pill-amount">₹{{ fmt(getOwesTo(b).reduce((s,x)=>s+x.total,0)) }}</span>
+          <span class="dues-pill-count">{{ getOwesTo(b).length }} {{ getOwesTo(b).length === 1 ? 'person' : 'people' }}</span>
         </div>
-      </template>
+        <div class="dues-pill settled-pill" v-if="!getOwedBy(b).length && !getOwesTo(b).length">
+          <span class="dues-pill-label">All settled up</span>
+        </div>
+      </div>
 
       <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" @click="detailsRoommate = b.roommate">
-        🔍 View Full Details
+        View Details
       </button>
     </div>
 
@@ -318,14 +305,25 @@ async function doSettle() {
 .net-pos  { color: var(--primary-bright); }
 .net-neg  { color: var(--danger); }
 .net-zero { color: var(--text-muted); }
-/* Dues sections */
-.dues-header { font-size: 11px; font-weight: 700; font-family: var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
-.dues-person { margin-bottom: 8px; }
-.dues-person-row { display: flex; justify-content: space-between; align-items: center; }
-.dues-person-name { font-weight: 600; font-size: 13px; font-family: var(--font-display); }
-.dues-person-amt  { font-weight: 700; font-size: 13px; font-family: var(--font-display); }
-.dues-item { font-size: 11px; color: var(--text-muted); padding-left: 10px; line-height: 1.6; }
-.dues-dot { margin-right: 4px; opacity: 0.5; }
+/* Dues summary pills */
+.dues-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.dues-pill {
+  flex: 1; min-width: 120px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.green-pill { background: var(--primary-glow); border-color: rgba(0,200,150,0.2); }
+.red-pill   { background: var(--danger-dim);   border-color: rgba(255,180,171,0.2); }
+.settled-pill { background: var(--surface-low); border-color: var(--border); }
+.dues-pill-label  { font-size: 10px; font-weight: 700; font-family: var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; }
+.green-pill .dues-pill-label { color: var(--primary); }
+.red-pill   .dues-pill-label { color: var(--danger); }
+.settled-pill .dues-pill-label { color: var(--text-muted); }
+.dues-pill-amount { font-size: 1rem; font-weight: 800; font-family: var(--font-display); }
+.green-pill .dues-pill-amount { color: var(--primary-bright); }
+.red-pill   .dues-pill-amount { color: var(--danger); }
+.dues-pill-count  { font-size: 11px; color: var(--text-muted); }
 /* Debt groups */
 .debt-group-card { background: var(--surface-low); }
 .dg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }

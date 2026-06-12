@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useExpenseStore } from '@/stores/expense'
 
 const props = defineProps({ expense: { type: Object, default: null } })
@@ -161,9 +161,26 @@ function togglePerson(id) {
 
 function buildCustomInputs() {
   const amt = Number(form.value.amount || 0)
-  const ea  = store.roommates.length > 0 ? parseFloat((amt / store.roommates.length).toFixed(2)) : 0
-  splitInputs.value = store.roommates.map(r => ({ roommateId: r.id, name: r.name, amount: ea }))
+  const n   = store.roommates.length
+  if (!n) { splitInputs.value = []; return }
+
+  // Even base share rounded to 2dp
+  const base    = parseFloat((amt / n).toFixed(2))
+  // Remainder so the total always sums to exactly amt
+  const remainder = parseFloat((amt - base * n).toFixed(2))
+
+  splitInputs.value = store.roommates.map((r, i) => ({
+    roommateId: r.id,
+    name:       r.name,
+    // Give the rounding remainder to the first person
+    amount:     i === 0 ? parseFloat((base + remainder).toFixed(2)) : base
+  }))
 }
+
+// Auto-rebuild custom inputs whenever the amount changes
+watch(() => form.value.amount, () => {
+  if (splitType.value === 'custom') buildCustomInputs()
+})
 
 function changeSplitType(type) {
   splitType.value = type

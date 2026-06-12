@@ -134,20 +134,43 @@ function formula(list) {
 </script>
 
 <style scoped>
-.identity-card { background: var(--primary-light); border-radius: var(--radius); padding: 16px; display: flex; gap: 14px; align-items: center; }
-.id-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 800; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.id-name { font-size: 1.2rem; font-weight: 700; }
-.id-net { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
-.section-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-.owed-by-title { color: var(--success); }
+.identity-card {
+  background: var(--primary-glow);
+  border: 1px solid rgba(0,200,150,0.2);
+  border-radius: var(--radius); padding: 18px;
+  display: flex; gap: 16px; align-items: center;
+}
+.id-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--surface-high);
+  border: 2px solid var(--primary);
+  color: var(--primary); font-weight: 800; font-size: 18px;
+  font-family: var(--font-display);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(0,200,150,0.2);
+}
+.id-name { font-size: 1.15rem; font-weight: 700; font-family: var(--font-display); color: var(--text); }
+.id-net { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.section-title { font-size: 12px; font-weight: 700; font-family: var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+.owed-by-title { color: var(--primary-bright); }
 .owed-to-title { color: var(--danger); }
-.empty-note { font-size: 13px; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
-.detail-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
-.detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.detail-name { font-weight: 700; font-size: 15px; }
-.detail-amount { font-weight: 700; font-size: 15px; }
-.owed-by-amt { color: var(--success); }
+.empty-note {
+  font-size: 13px; color: var(--text-muted);
+  background: var(--surface-low); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+}
+.detail-card {
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.detail-card:hover { border-color: var(--text-muted); }
+.detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.detail-name { font-weight: 700; font-size: 14px; font-family: var(--font-display); }
+.detail-amount { font-weight: 700; font-size: 15px; font-family: var(--font-display); }
+.owed-by-amt { color: var(--primary-bright); }
 .owed-to-amt { color: var(--danger); }
-.detail-formula { font-size: 13px; font-weight: 500; color: var(--text-muted); }
-.detail-contrib { font-size: 12px; color: var(--text-muted); margin-top: 3px; opacity: 0.8; }
+.detail-formula { font-size: 13px; font-weight: 500; color: var(--text-muted); font-family: var(--font-display); }
+.detail-contrib { font-size: 11px; color: var(--text-muted); margin-top: 4px; opacity: 0.7; line-height: 1.5; }
 </style>

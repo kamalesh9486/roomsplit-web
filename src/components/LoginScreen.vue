@@ -81,17 +81,53 @@ async function register() {
 </script>
 
 <style scoped>
-.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
-.login-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: var(--bg);
+  background-image: radial-gradient(ellipse at 20% 50%, rgba(0,200,150,0.06) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 20%, rgba(124,58,237,0.05) 0%, transparent 60%);
+}
+.login-card {
+  width: 100%; max-width: 390px;
+  display: flex; flex-direction: column; gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,200,150,0.04);
+}
 .login-logo { text-align: center; padding-bottom: 8px; }
-.logo-icon { width: 56px; height: 56px; border-radius: 14px; background: var(--primary); color: #fff; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
-.login-logo h1 { font-size: 1.4rem; }
-.login-logo p { color: var(--text-muted); font-size: 13px; }
-.login-prompt { font-size: 13px; font-weight: 500; color: var(--text-muted); text-align: center; }
-.roommate-list { display: flex; flex-direction: column; gap: 8px; }
-.roommate-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; font-size: 15px; font-family: inherit; text-align: left; transition: background 0.15s, border-color 0.15s; }
-.roommate-btn:hover { background: var(--primary-light); border-color: var(--primary); }
-.rm-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.or-text { font-size: 12px; color: var(--text-muted); text-align: center; }
+.logo-icon {
+  width: 60px; height: 60px; border-radius: var(--radius);
+  background: var(--primary-dim); border: 1px solid rgba(0,200,150,0.4);
+  color: var(--primary); font-size: 1.8rem; font-family: var(--font-display); font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 0 24px rgba(0,200,150,0.15);
+}
+.login-logo h1 { font-size: 1.6rem; font-family: var(--font-display); color: var(--text); }
+.login-logo p { color: var(--text-muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+.login-prompt { font-size: 12px; font-weight: 600; font-family: var(--font-display); color: var(--text-muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; }
+.roommate-list { display: flex; flex-direction: column; gap: 6px; }
+.roommate-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-low); cursor: pointer;
+  font-size: 14px; font-family: var(--font-body); color: var(--text);
+  text-align: left; transition: all 0.15s;
+}
+.roommate-btn:hover {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
+.rm-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surface-high); color: var(--primary);
+  font-weight: 700; font-size: 13px; font-family: var(--font-display);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.or-text { font-size: 11px; font-weight: 600; font-family: var(--font-display); color: var(--text-muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; }
 .login-err { color: var(--danger); font-size: 13px; }
 </style>

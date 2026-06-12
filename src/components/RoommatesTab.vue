@@ -129,17 +129,18 @@ async function add() {
 </script>
 
 <style scoped>
-.rm-card { display: flex; flex-direction: column; gap: 10px; }
-.rm-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rm-card { display: flex; flex-direction: column; gap: 10px; transition: border-color 0.15s; }
+.rm-card:hover { border-color: var(--text-muted); }
+.rm-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-high); color: var(--primary); font-weight: 700; font-size: 14px; font-family: var(--font-display); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
 .rm-info { display: flex; flex-direction: column; gap: 3px; }
-.rm-name { font-weight: 500; font-size: 15px; }
+.rm-name { font-weight: 600; font-size: 14px; font-family: var(--font-display); color: var(--text); }
 .rm-badges { display: flex; gap: 4px; flex-wrap: wrap; }
-.lock-icon { font-size: 16px; opacity: 0.4; cursor: default; }
-.delete-confirm { background: var(--danger-light); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.lock-icon { font-size: 16px; opacity: 0.3; cursor: default; }
+.delete-confirm { background: var(--danger-dim); border: 1px solid rgba(255,180,171,0.2); border-radius: var(--radius-sm); padding: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); }
 .delete-confirm span { flex: 1; }
-.warning-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.warning-title { font-weight: 700; color: #c2410c; font-size: 13px; }
-.warning-body { font-size: 13px; color: #9a3412; line-height: 1.5; }
+.warning-box { background: rgba(255,180,171,0.06); border: 1px solid rgba(255,180,171,0.25); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.warning-title { font-weight: 700; color: var(--danger); font-size: 12px; font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; }
+.warning-body { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 .warning-actions { display: flex; gap: 8px; }
 .err-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
 </style>

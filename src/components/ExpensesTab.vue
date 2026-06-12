@@ -178,34 +178,35 @@ async function bulkDelete() {
 </script>
 
 <style scoped>
-.admin-toolbar { margin-bottom: 4px; }
-.admin-label { font-weight: 600; font-size: 14px; }
-.expense-card { cursor: pointer; transition: border-color 0.15s; user-select: none; }
-.expense-card:hover { border-color: var(--primary); }
-.exp-selected { border-color: var(--primary); border-width: 2px; background: var(--primary-light); }
+.admin-toolbar { margin-bottom: 4px; background: var(--surface-low); }
+.admin-label { font-weight: 600; font-size: 13px; font-family: var(--font-display); color: var(--text-muted); }
+.expense-card { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; user-select: none; }
+.expense-card:hover { border-color: rgba(0,200,150,0.4); box-shadow: 0 0 20px rgba(0,200,150,0.04); }
+.exp-selected { border-color: var(--primary) !important; border-width: 2px; background: var(--primary-glow); }
 .exp-top { display: flex; align-items: center; gap: 10px; }
 .exp-checkbox { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary); }
 .exp-info { flex: 1; min-width: 0; }
-.exp-title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.exp-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.exp-amount { font-size: 1.1rem; font-weight: 800; color: var(--primary); flex-shrink: 0; }
-.exp-chevron { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
-.splits-label { font-size: 12px; font-weight: 700; color: var(--primary); }
-.participants-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.part-summary { font-size: 11px; color: var(--text-muted); }
-.participant-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 8px; border-radius: var(--radius-sm); margin-bottom: 4px; background: var(--bg); }
-.is-payer { background: var(--primary-light); }
+.exp-title { font-weight: 700; font-size: 14px; font-family: var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.exp-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.exp-amount { font-size: 1.1rem; font-weight: 800; font-family: var(--font-display); color: var(--primary-bright); flex-shrink: 0; }
+.exp-chevron { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+.splits-label { font-size: 11px; font-weight: 700; font-family: var(--font-display); color: var(--primary); letter-spacing: 0.06em; text-transform: uppercase; }
+.participants-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.part-summary { font-size: 11px; color: var(--text-muted); font-family: var(--font-display); }
+.participant-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 4px; background: var(--surface-low); border: 1px solid transparent; transition: border-color 0.15s; }
+.participant-row:hover { border-color: var(--border); }
+.is-payer { background: var(--primary-glow); border-color: rgba(0,200,150,0.15) !important; }
 .part-left { display: flex; align-items: center; gap: 8px; }
-.part-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--border); color: var(--text-muted); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.part-avatar-payer { background: var(--primary); color: #fff; }
-.part-name { font-size: 13px; font-weight: 600; }
-.part-sub { font-size: 11px; margin-top: 1px; }
-.badge-paid { color: var(--primary); font-weight: 600; }
-.part-owes { color: var(--danger); }
-.part-amount { font-size: 13px; font-weight: 700; flex-shrink: 0; }
-.amount-paid  { color: var(--primary); }
+.part-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-high); color: var(--text-muted); font-size: 11px; font-weight: 700; font-family: var(--font-display); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
+.part-avatar-payer { background: var(--primary-dim); color: var(--primary); border-color: var(--primary); }
+.part-name { font-size: 13px; font-weight: 600; font-family: var(--font-display); color: var(--text); }
+.part-sub { font-size: 11px; margin-top: 2px; }
+.badge-paid { color: var(--primary); font-weight: 600; font-family: var(--font-display); }
+.part-owes { color: var(--danger); font-size: 11px; }
+.part-amount { font-size: 13px; font-weight: 700; font-family: var(--font-display); flex-shrink: 0; }
+.amount-paid  { color: var(--primary-bright); }
 .amount-owes  { color: var(--text-muted); }
-.exp-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
-.delete-confirm { background: var(--danger-light); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-top: 10px; }
+.exp-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.delete-confirm { background: var(--danger-dim); border: 1px solid rgba(255,180,171,0.2); border-radius: var(--radius-sm); padding: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-top: 10px; color: var(--text-muted); }
 .delete-confirm span { flex: 1; min-width: 100px; }
 </style>

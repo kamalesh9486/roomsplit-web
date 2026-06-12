@@ -79,14 +79,36 @@ onMounted(() => store.loadData())
 </script>
 
 <style scoped>
-.brand-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
-.uname { font-size: 14px; }
-.tab-refresh { background: transparent; border: none; cursor: pointer; padding: 12px 10px; color: var(--text-muted); font-size: 16px; display: flex; align-items: center; }
+.brand-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--primary-dim);
+  border: 1px solid var(--primary);
+  color: var(--primary); font-size: 1.05rem; font-family: var(--font-display); font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.uname { font-size: 13px; font-family: var(--font-display); font-weight: 600; color: var(--text); }
+.tab-refresh {
+  background: transparent; border: none; cursor: pointer;
+  padding: 14px 12px; color: var(--text-muted);
+  font-size: 18px; display: flex; align-items: center;
+  transition: color 0.15s;
+}
+.tab-refresh:hover { color: var(--primary); }
 
 /* Setup screen */
-.setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.setup-card { max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-.logo-icon { width: 56px; height: 56px; border-radius: 14px; background: var(--primary); color: #fff; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; }
-.setup-code { background: #f4f3f1; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; text-align: left; white-space: pre; width: 100%; font-family: monospace; }
+.setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+.setup-card { max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.logo-icon {
+  width: 60px; height: 60px; border-radius: var(--radius);
+  background: var(--primary-dim); border: 1px solid var(--primary);
+  color: var(--primary); font-size: 1.8rem; font-family: var(--font-display);
+  display: flex; align-items: center; justify-content: center;
+}
+.setup-code {
+  background: var(--surface-low); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; font-size: 12px;
+  text-align: left; white-space: pre; width: 100%; font-family: monospace;
+  color: var(--primary-bright);
+}
 .setup-hint { font-size: 12px; color: var(--text-muted); }
 </style>

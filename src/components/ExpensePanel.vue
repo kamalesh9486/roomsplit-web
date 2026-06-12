@@ -255,38 +255,69 @@ async function submit() {
 </script>
 
 <style scoped>
-/* Tabs */
+/* Split method tabs */
 .split-tabs { display: flex; gap: 4px; }
-.split-tab { flex: 1; padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.split-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-.tab-icon { font-size: 18px; line-height: 1; }
-/* Split section wrapper */
-.split-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-.split-info { font-size: 12px; font-weight: 600; color: var(--primary); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.split-tab {
+  flex: 1; padding: 9px 4px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-low);
+  font-size: 11px; font-weight: 600; font-family: var(--font-display);
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  letter-spacing: 0.02em;
+}
+.split-tab:hover { border-color: var(--text-muted); color: var(--text); }
+.split-tab.active {
+  background: var(--primary-dim); color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 12px rgba(0,200,150,0.1);
+}
+.tab-icon { font-size: 16px; line-height: 1; }
+/* Split body */
+.split-section {
+  background: var(--surface-low); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.split-info {
+  font-size: 11px; font-weight: 700; font-family: var(--font-display);
+  color: var(--primary); padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
 /* Equal All */
-.split-row-preview { display: flex; justify-content: space-between; align-items: center; padding: 5px 2px; font-size: 13px; }
-/* Equal Select toggle rows */
-.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border); transition: all 0.15s; }
-.toggle-row.included { background: var(--primary-light); border-color: #86efac; }
-.toggle-row:not(.included) { opacity: 0.6; }
+.split-row-preview { display: flex; justify-content: space-between; align-items: center; padding: 5px 4px; font-size: 13px; color: var(--text-muted); }
+/* Equal Select */
+.toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border); transition: all 0.15s;
+}
+.toggle-row.included { background: var(--primary-glow); border-color: rgba(0,200,150,0.3); }
+.toggle-row:not(.included) { opacity: 0.55; }
 .toggle-row:hover { opacity: 1; border-color: var(--primary); }
-.toggle-box { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; transition: all 0.15s; }
-.toggle-box.checked { background: var(--primary); border-color: var(--primary); color: #fff; }
-.name-excluded { color: var(--text-muted); text-decoration: line-through; }
-.excl-badge { font-size: 10px; background: var(--border); color: var(--text-muted); padding: 1px 6px; border-radius: 99px; }
-/* Custom split */
+.toggle-box {
+  width: 20px; height: 20px; border-radius: var(--radius-xs);
+  border: 2px solid var(--border); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; font-family: var(--font-display);
+  flex-shrink: 0; transition: all 0.15s; color: #0e1511;
+}
+.toggle-box.checked { background: var(--primary); border-color: var(--primary); }
+.name-excluded { color: var(--text-muted); text-decoration: line-through; font-size: 13px; }
+.excl-badge { font-size: 10px; background: var(--surface-high); color: var(--text-muted); padding: 2px 7px; border-radius: 99px; font-family: var(--font-display); }
+/* Custom */
 .custom-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-.split-name { font-size: 13px; flex: 1; }
+.split-name { font-size: 13px; font-family: var(--font-display); font-weight: 500; flex: 1; color: var(--text); }
 .split-field { display: flex; align-items: center; gap: 4px; }
-.split-sym { font-size: 13px; color: var(--text-muted); }
-.split-num { width: 90px; padding: 5px 8px; text-align: right; }
-/* Mini avatar */
-.mini-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.split-sym { font-size: 13px; color: var(--text-muted); font-family: var(--font-display); }
+.split-num { width: 90px; padding: 6px 8px; text-align: right; font-family: var(--font-display); }
+/* Avatars */
+.mini-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-high); color: var(--primary); font-size: 11px; font-weight: 700; font-family: var(--font-display); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .mini-avatar.muted { opacity: 0.35; }
 /* Misc */
-.fw { font-weight: 600; font-size: 13px; }
+.fw { font-weight: 700; font-size: 13px; font-family: var(--font-display); color: var(--primary-bright); }
 .muted-text { color: var(--text-muted); font-size: 13px; }
-.split-bar { font-size: 12px; font-weight: 500; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
-.bar-ok  { color: var(--success); }
+.split-bar { font-size: 12px; font-weight: 600; font-family: var(--font-display); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.bar-ok  { color: var(--primary-bright); }
 .bar-err { color: var(--danger); }
 </style>

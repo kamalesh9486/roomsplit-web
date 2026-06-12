@@ -37,34 +37,29 @@ export const useExpenseStore = defineStore('expense', () => {
     })
   )
 
-  // Greedy bilateral settlement — produces the minimum number of transfers
+  // Raw per-expense debts — each entry is one split relationship, never netted
+  // fromId owes toId (amount) because of (title) on (date)
   const settlements = computed(() => {
-    const creditors = balances.value
-      .filter(b => b.netBalance > 0.01)
-      .map(b => ({ id: b.roommate.id, name: b.roommate.name, amount: b.netBalance }))
-      .sort((a, b) => b.amount - a.amount)
-
-    const debtors = balances.value
-      .filter(b => b.netBalance < -0.01)
-      .map(b => ({ id: b.roommate.id, name: b.roommate.name, amount: Math.abs(b.netBalance) }))
-      .sort((a, b) => b.amount - a.amount)
-
     const transfers = []
-    let ci = 0, di = 0
-
-    while (ci < creditors.length && di < debtors.length) {
-      const settle = parseFloat(Math.min(creditors[ci].amount, debtors[di].amount).toFixed(2))
-      transfers.push({
-        fromId:   debtors[di].id,   fromName: debtors[di].name,
-        toId:     creditors[ci].id, toName:   creditors[ci].name,
-        amount: settle
-      })
-      creditors[ci] = { ...creditors[ci], amount: parseFloat((creditors[ci].amount - settle).toFixed(2)) }
-      debtors[di]   = { ...debtors[di],   amount: parseFloat((debtors[di].amount   - settle).toFixed(2)) }
-      if (creditors[ci].amount < 0.01) ci++
-      if (debtors[di].amount   < 0.01) di++
+    for (const expense of expenses.value) {
+      const payer = roommates.value.find(r => r.id === expense.payer_id)
+      if (!payer) continue
+      for (const split of (expense.splits || [])) {
+        if (split.roommate_id !== expense.payer_id && split.amount > 0.01) {
+          const debtor = roommates.value.find(r => r.id === split.roommate_id)
+          if (!debtor) continue
+          transfers.push({
+            fromId:   debtor.id, fromName: debtor.name,
+            toId:     payer.id,  toName:   payer.name,
+            amount:   split.amount,
+            title:    expense.title,
+            date:     expense.date,
+            expenseId: expense.id
+          })
+        }
+      }
     }
-    return transfers
+    return transfers.sort((a, b) => (b.date || 0) - (a.date || 0))
   })
 
   // True if a roommate has any expense or split history

@@ -62,14 +62,35 @@
         <div class="exp-chevron">{{ expandedId === exp.id ? '▲' : '▼' }}</div>
       </div>
 
-      <!-- Expanded: splits + actions -->
+      <!-- Expanded: participants table + actions -->
       <template v-if="expandedId === exp.id && !multiSelect">
         <hr class="divider" style="margin:12px 0 8px" />
-        <div class="splits-label">Splits:</div>
-        <div v-for="s in exp.splits" :key="s.id" class="split-row">
-          <span>{{ rmName(s.roommate_id) }}</span>
-          <span>₹{{ fmt(s.amount) }}</span>
+
+        <!-- Participant header -->
+        <div class="participants-header">
+          <span class="splits-label">👥 Participants ({{ exp.splits.length }})</span>
+          <span class="part-summary">{{ exp.splits.length }} people · ₹{{ fmt(exp.amount / exp.splits.length) }} each avg</span>
         </div>
+
+        <!-- Each participant row: payer highlighted, others show who they owe -->
+        <div v-for="s in exp.splits" :key="s.id" class="participant-row" :class="{ 'is-payer': s.roommate_id === exp.payer_id }">
+          <div class="part-left">
+            <div class="part-avatar" :class="{ 'part-avatar-payer': s.roommate_id === exp.payer_id }">
+              {{ rmName(s.roommate_id).slice(0,2).toUpperCase() }}
+            </div>
+            <div>
+              <div class="part-name">{{ rmName(s.roommate_id) }}</div>
+              <div class="part-sub">
+                <span v-if="s.roommate_id === exp.payer_id" class="badge-paid">Paid the bill</span>
+                <span v-else class="part-owes">owes ₹{{ fmt(s.amount) }} → {{ payerName(exp.payer_id) }}</span>
+              </div>
+            </div>
+          </div>
+          <span class="part-amount" :class="s.roommate_id === exp.payer_id ? 'amount-paid' : 'amount-owes'">
+            ₹{{ fmt(s.amount) }}
+          </span>
+        </div>
+
         <div class="exp-actions">
           <button class="btn btn-ghost btn-sm" @click.stop="openPanel(exp)">✏️ Edit</button>
           <button v-if="store.isAdmin" class="btn btn-danger btn-sm" @click.stop="confirmDel = exp">🗑️ Delete</button>
@@ -164,8 +185,21 @@ async function bulkDelete() {
 .exp-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .exp-amount { font-size: 1.1rem; font-weight: 800; color: var(--primary); flex-shrink: 0; }
 .exp-chevron { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
-.splits-label { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
-.split-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: var(--text-muted); }
+.splits-label { font-size: 12px; font-weight: 700; color: var(--primary); }
+.participants-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.part-summary { font-size: 11px; color: var(--text-muted); }
+.participant-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 8px; border-radius: var(--radius-sm); margin-bottom: 4px; background: var(--bg); }
+.is-payer { background: var(--primary-light); }
+.part-left { display: flex; align-items: center; gap: 8px; }
+.part-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--border); color: var(--text-muted); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.part-avatar-payer { background: var(--primary); color: #fff; }
+.part-name { font-size: 13px; font-weight: 600; }
+.part-sub { font-size: 11px; margin-top: 1px; }
+.badge-paid { color: var(--primary); font-weight: 600; }
+.part-owes { color: var(--danger); }
+.part-amount { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.amount-paid  { color: var(--primary); }
+.amount-owes  { color: var(--text-muted); }
 .exp-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
 .delete-confirm { background: var(--danger-light); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-top: 10px; }
 .delete-confirm span { flex: 1; min-width: 100px; }

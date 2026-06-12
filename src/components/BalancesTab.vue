@@ -9,14 +9,10 @@
       </div>
       <div class="hero-right">
         <div class="avatar-stack">
-          <div v-for="r in store.roommates.slice(0, 4)" :key="r.id" class="stack-avatar">
-            {{ r.name.slice(0, 2).toUpperCase() }}
-          </div>
-          <div v-if="store.roommates.length > 4" class="stack-avatar stack-more">
-            +{{ store.roommates.length - 4 }}
-          </div>
+          <div v-for="r in store.roommates.slice(0, 4)" :key="r.id" class="stack-avatar">{{ r.name.slice(0,2).toUpperCase() }}</div>
+          <div v-if="store.roommates.length > 4" class="stack-avatar stack-more">+{{ store.roommates.length - 4 }}</div>
         </div>
-        <div class="hero-sub">Split equally among suite members</div>
+        <div class="hero-sub">{{ store.roommates.length }} members · {{ store.expenses.length }} expenses</div>
       </div>
     </div>
 
@@ -25,43 +21,54 @@
       <span class="filter-label">Viewing context:</span>
       <div class="chips">
         <button class="chip" :class="{ active: selectedId === null }" @click="selectedId = null">Everyone</button>
-        <button v-for="r in store.roommates" :key="r.id" class="chip" :class="{ active: selectedId === r.id }" @click="selectedId = r.id">
-          {{ r.name }}
-        </button>
+        <button v-for="r in store.roommates" :key="r.id" class="chip" :class="{ active: selectedId === r.id }" @click="selectedId = r.id">{{ r.name }}</button>
       </div>
     </div>
 
-    <!-- Personalized balance card when someone is selected -->
-    <div v-if="selectedBalance" class="card personal-card" :class="netCardClass(selectedBalance.netBalance)">
-      <div class="row" style="gap:8px;margin-bottom:8px">
-        <span class="personal-icon">{{ selectedBalance.netBalance >= 0 ? '✓' : '!' }}</span>
-        <strong>Your Balance: {{ selectedBalance.roommate.name }}</strong>
+    <!-- Personalized card (when someone selected) -->
+    <div v-if="selectedId && personalBreakdown" class="card personal-card">
+      <div class="personal-header">
+        <div class="row" style="gap:8px">
+          <div class="rm-avatar sm">{{ selectedName.slice(0,2).toUpperCase() }}</div>
+          <strong>{{ selectedName }}'s Balance</strong>
+        </div>
+        <div class="personal-totals">
+          <span class="badge badge-green">+₹{{ fmt(totalOthersOweMe) }} owed to me</span>
+          <span class="badge badge-red">-₹{{ fmt(totalIOweOthers) }} I owe</span>
+        </div>
       </div>
-      <div class="personal-status">{{ personalStatus(selectedBalance.netBalance) }}</div>
-      <template v-if="personalConsolidated.length">
-        <hr class="divider" style="margin:10px 0" />
-        <div class="personal-section-label">Active Settlements (Consolidated):</div>
-        <div v-for="s in personalConsolidated" :key="`${s.fromId}-${s.toId}`" class="personal-row">
-          <span v-if="s.fromId === selectedId">• Pay ₹{{ fmt(s.amount) }} to {{ s.toName }}</span>
-          <span v-else>• Receive ₹{{ fmt(s.amount) }} from {{ s.fromName }}</span>
+      <template v-if="personalBreakdown.receives.length">
+        <hr class="divider" style="margin:8px 0" />
+        <div class="pd-section-label green-label">↑ Others owe me:</div>
+        <div v-for="p in personalBreakdown.receives" :key="p.id" class="pd-row">
+          <span class="pd-name">{{ p.name }}</span>
+          <span class="pd-total green-text">₹{{ fmt(p.total) }}</span>
+          <span class="pd-items">{{ p.items.map(i => `${i.title} ₹${fmt(i.amount)}`).join(' · ') }}</span>
+        </div>
+      </template>
+      <template v-if="personalBreakdown.pays.length">
+        <hr class="divider" style="margin:8px 0" />
+        <div class="pd-section-label red-label">↓ I owe others:</div>
+        <div v-for="p in personalBreakdown.pays" :key="p.id" class="pd-row">
+          <span class="pd-name">{{ p.name }}</span>
+          <span class="pd-total red-text">₹{{ fmt(p.total) }}</span>
+          <span class="pd-items">{{ p.items.map(i => `${i.title} ₹${fmt(i.amount)}`).join(' · ') }}</span>
         </div>
       </template>
     </div>
 
     <!-- Balance cards -->
     <div class="section-header"><h2>Roommate Balances</h2></div>
-
-    <div v-if="!store.balances.length" class="empty-state">
-      <div class="icon">⚖️</div><p>No expenses yet.</p>
-    </div>
+    <div v-if="!store.balances.length" class="empty-state"><div class="icon">⚖️</div><p>No expenses yet.</p></div>
 
     <div v-for="b in store.balances" :key="b.roommate.id" class="card balance-card" :class="{ 'balance-selected': b.roommate.id === selectedId }">
+      <!-- Top row -->
       <div class="balance-top">
         <div class="row" style="gap:12px">
-          <div class="rm-avatar">{{ b.roommate.name.slice(0, 2).toUpperCase() }}</div>
+          <div class="rm-avatar">{{ b.roommate.name.slice(0,2).toUpperCase() }}</div>
           <div>
             <div class="balance-name">{{ b.roommate.name }}</div>
-            <div class="balance-sub">Paid ₹{{ fmt(b.totalPaid) }} · Owed ₹{{ fmt(b.totalOwed) }}</div>
+            <div class="balance-sub">Paid ₹{{ fmt(b.totalPaid) }} · Own share ₹{{ fmt(b.totalOwed) }}</div>
           </div>
         </div>
         <div class="balance-net-wrap">
@@ -74,38 +81,64 @@
         </div>
       </div>
 
-      <!-- Owes to / Owed by rows -->
-      <template v-if="getOwesTo(b).length || getOwedBy(b).length">
-        <hr class="divider" style="margin:10px 0" />
-        <div v-for="x in getOwesTo(b)" :key="`ot-${x.name}`" class="dues-row dues-owes">
-          <span>→ Owes ₹{{ fmt(x.amount) }} to {{ x.name }}</span>
+      <!-- Raw Owed By: others owe this person -->
+      <template v-if="getOwedBy(b).length">
+        <hr class="divider" style="margin:10px 0 6px" />
+        <div class="dues-header green-label">↑ Owed By (₹{{ fmt(getOwedBy(b).reduce((s,x)=>s+x.total,0)) }})</div>
+        <div v-for="x in getOwedBy(b)" :key="x.id" class="dues-person">
+          <div class="dues-person-row">
+            <span class="dues-person-name">{{ x.name }}</span>
+            <span class="green-text dues-person-amt">₹{{ fmt(x.total) }}</span>
+          </div>
+          <div v-for="(item, i) in x.items" :key="i" class="dues-item">
+            <span class="dues-dot">•</span> {{ item.title }} — ₹{{ fmt(item.amount) }}
+          </div>
         </div>
-        <div v-for="x in getOwedBy(b)" :key="`ob-${x.name}`" class="dues-row dues-owed">
-          <span>← Owed ₹{{ fmt(x.amount) }} by {{ x.name }}</span>
+      </template>
+
+      <!-- Raw Owed To: this person owes others -->
+      <template v-if="getOwesTo(b).length">
+        <hr class="divider" style="margin:10px 0 6px" />
+        <div class="dues-header red-label">↓ Owed To (₹{{ fmt(getOwesTo(b).reduce((s,x)=>s+x.total,0)) }})</div>
+        <div v-for="x in getOwesTo(b)" :key="x.id" class="dues-person">
+          <div class="dues-person-row">
+            <span class="dues-person-name">{{ x.name }}</span>
+            <span class="red-text dues-person-amt">₹{{ fmt(x.total) }}</span>
+          </div>
+          <div v-for="(item, i) in x.items" :key="i" class="dues-item">
+            <span class="dues-dot">•</span> {{ item.title }} — ₹{{ fmt(item.amount) }}
+          </div>
         </div>
       </template>
 
       <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" @click="detailsRoommate = b.roommate">
-        🔍 View Details
+        🔍 View Full Details
       </button>
     </div>
 
-    <!-- Consolidated settlements -->
-    <template v-if="consolidatedSettlements.length">
+    <!-- All outstanding debts — raw, one group per from→to pair -->
+    <template v-if="debtGroups.length">
       <hr class="divider" />
-      <div class="section-header"><h2>Suggested Settlements (Consolidated)</h2></div>
-      <div v-for="s in consolidatedSettlements" :key="`${s.fromId}-${s.toId}`" class="card settlement-row-card">
-        <div class="row">
-          <div style="flex:1">
-            <div class="row" style="gap:6px;flex-wrap:wrap">
-              <strong class="settle-from">{{ s.fromName }}</strong>
-              <span class="settle-arrow">→</span>
-              <strong class="settle-to">{{ s.toName }}</strong>
-            </div>
-            <div class="settle-amount">Pay ₹{{ fmt(s.amount) }}</div>
+      <div class="section-header">
+        <h2>All Outstanding Debts</h2>
+        <span class="badge badge-red">{{ debtGroups.length }} debt{{ debtGroups.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <div v-for="g in debtGroups" :key="`${g.fromId}-${g.toId}`" class="card debt-group-card">
+        <div class="dg-header">
+          <div class="dg-pair">
+            <strong class="red-text">{{ g.fromName }}</strong>
+            <span class="dg-arrow">owes</span>
+            <strong class="green-text">{{ g.toName }}</strong>
           </div>
-          <button class="btn btn-primary btn-sm" @click="settleTarget = s">✓ Settle</button>
+          <strong class="dg-total">₹{{ fmt(g.total) }}</strong>
         </div>
+        <div v-for="(item, i) in g.items" :key="i" class="dg-item">
+          <span>{{ item.title }}</span>
+          <span>₹{{ fmt(item.amount) }}</span>
+        </div>
+        <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" @click="settleTarget = g">
+          ✓ Record Settlement (₹{{ fmt(g.total) }})
+        </button>
       </div>
     </template>
 
@@ -117,10 +150,10 @@
           <button class="btn-icon" @click="settleTarget = null">✕</button>
         </div>
         <div class="panel-body">
-          <p style="color:var(--text);font-size:15px">
-            This will record a payment of <strong>₹{{ fmt(settleTarget.amount) }}</strong>
-            paid by <strong>{{ settleTarget.fromName }}</strong> to <strong>{{ settleTarget.toName }}</strong>
-            to offset the balance.
+          <p style="color:var(--text);font-size:15px;line-height:1.6">
+            Record a payment of <strong>₹{{ fmt(settleTarget.total) }}</strong>
+            from <strong>{{ settleTarget.fromName }}</strong> to <strong>{{ settleTarget.toName }}</strong>
+            covering {{ settleTarget.items.length }} expense{{ settleTarget.items.length !== 1 ? 's' : '' }}.
           </p>
           <p v-if="settleErr" class="error-banner">{{ settleErr }}</p>
         </div>
@@ -134,7 +167,6 @@
       </div>
     </div>
 
-    <!-- Roommate details slide-in -->
     <RoommateDetails v-if="detailsRoommate" :roommate="detailsRoommate" @close="detailsRoommate = null" />
   </div>
 </template>
@@ -151,68 +183,85 @@ const settleTarget = ref(null)
 const settleBusy = ref(false)
 const settleErr = ref('')
 
-const grandTotal = computed(() => store.balances.reduce((s, b) => s + b.totalPaid, 0))
-const selectedBalance = computed(() => store.balances.find(b => b.roommate.id === selectedId.value) ?? null)
+const grandTotal   = computed(() => store.balances.reduce((s, b) => s + b.totalPaid, 0))
+const selectedName = computed(() => store.roommates.find(r => r.id === selectedId.value)?.name || '')
 
-const consolidatedSettlements = computed(() => {
+// Raw debts grouped by from→to pair (no netting — A→B and B→A are separate groups)
+const debtGroups = computed(() => {
   const map = {}
   for (const s of store.settlements) {
     const key = `${s.fromId}→${s.toId}`
-    if (!map[key]) map[key] = { fromId: s.fromId, fromName: s.fromName, toId: s.toId, toName: s.toName, amount: 0 }
-    map[key].amount += s.amount
+    if (!map[key]) map[key] = { fromId: s.fromId, fromName: s.fromName, toId: s.toId, toName: s.toName, total: 0, items: [] }
+    map[key].total = parseFloat((map[key].total + s.amount).toFixed(2))
+    map[key].items.push({ title: s.title, amount: s.amount })
   }
-  return Object.values(map).filter(s => s.amount > 0.01)
+  return Object.values(map).filter(g => g.total > 0.01)
 })
 
-const personalConsolidated = computed(() => {
-  if (!selectedId.value) return []
-  const relevant = store.settlements.filter(s => s.fromId === selectedId.value || s.toId === selectedId.value)
-  const map = {}
-  for (const s of relevant) {
-    const key = `${s.fromId}→${s.toId}`
-    if (!map[key]) map[key] = { fromId: s.fromId, fromName: s.fromName, toId: s.toId, toName: s.toName, amount: 0 }
-    map[key].amount += s.amount
+// Personalized breakdown for selected person — raw, no netting
+const personalBreakdown = computed(() => {
+  if (!selectedId.value) return null
+  const payMap = {}, receiveMap = {}
+  for (const s of store.settlements) {
+    if (s.fromId === selectedId.value) {
+      if (!payMap[s.toId]) payMap[s.toId] = { id: s.toId, name: s.toName, total: 0, items: [] }
+      payMap[s.toId].total = parseFloat((payMap[s.toId].total + s.amount).toFixed(2))
+      payMap[s.toId].items.push({ title: s.title, amount: s.amount })
+    }
+    if (s.toId === selectedId.value) {
+      if (!receiveMap[s.fromId]) receiveMap[s.fromId] = { id: s.fromId, name: s.fromName, total: 0, items: [] }
+      receiveMap[s.fromId].total = parseFloat((receiveMap[s.fromId].total + s.amount).toFixed(2))
+      receiveMap[s.fromId].items.push({ title: s.title, amount: s.amount })
+    }
   }
-  return Object.values(map).filter(s => s.amount > 0.01)
+  return {
+    pays:     Object.values(payMap).filter(x => x.total > 0.01),
+    receives: Object.values(receiveMap).filter(x => x.total > 0.01)
+  }
 })
 
-function getOwesTo(b) {
-  const map = {}
-  for (const s of store.settlements.filter(x => x.fromId === b.roommate.id)) {
-    if (!map[s.toId]) map[s.toId] = { name: s.toName, amount: 0 }
-    map[s.toId].amount += s.amount
-  }
-  return Object.values(map).filter(x => x.amount > 0.01)
-}
+const totalOthersOweMe = computed(() =>
+  store.settlements.filter(s => s.toId === selectedId.value).reduce((s, x) => s + x.amount, 0)
+)
+const totalIOweOthers = computed(() =>
+  store.settlements.filter(s => s.fromId === selectedId.value).reduce((s, x) => s + x.amount, 0)
+)
 
+// Per balance-card helpers — raw, not netted against each other
 function getOwedBy(b) {
+  // Others owe this person: settlements where toId = this person
   const map = {}
   for (const s of store.settlements.filter(x => x.toId === b.roommate.id)) {
-    if (!map[s.fromId]) map[s.fromId] = { name: s.fromName, amount: 0 }
-    map[s.fromId].amount += s.amount
+    if (!map[s.fromId]) map[s.fromId] = { id: s.fromId, name: s.fromName, total: 0, items: [] }
+    map[s.fromId].total = parseFloat((map[s.fromId].total + s.amount).toFixed(2))
+    map[s.fromId].items.push({ title: s.title, amount: s.amount })
   }
-  return Object.values(map).filter(x => x.amount > 0.01)
+  return Object.values(map).filter(x => x.total > 0.01)
 }
 
-function personalStatus(net) {
-  if (net > 0.01) return `You are owed ₹${fmt(net)} overall.`
-  if (net < -0.01) return `You owe ₹${fmt(-net)} overall.`
-  return 'You are fully settled up!'
+function getOwesTo(b) {
+  // This person owes others: settlements where fromId = this person
+  const map = {}
+  for (const s of store.settlements.filter(x => x.fromId === b.roommate.id)) {
+    if (!map[s.toId]) map[s.toId] = { id: s.toId, name: s.toName, total: 0, items: [] }
+    map[s.toId].total = parseFloat((map[s.toId].total + s.amount).toFixed(2))
+    map[s.toId].items.push({ title: s.title, amount: s.amount })
+  }
+  return Object.values(map).filter(x => x.total > 0.01)
 }
 
 function netClass(n) { return n >= 0.01 ? 'net-pos' : n <= -0.01 ? 'net-neg' : 'net-zero' }
-function netCardClass(n) { return n >= 0.01 ? 'personal-green' : n <= -0.01 ? 'personal-red' : 'personal-gray' }
-function fmt(n) { return Number(n) % 1 === 0 ? Number(n).toFixed(0) : Number(n).toFixed(2) }
+function fmt(n)  { return Number(n) % 1 === 0 ? Number(n).toFixed(0) : Number(n).toFixed(2) }
 function fmtN(n) { return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 async function doSettle() {
   settleErr.value = ''
   settleBusy.value = true
   try {
-    await store.settleUp(settleTarget.value)
+    await store.settleUp({ ...settleTarget.value, amount: settleTarget.value.total })
     settleTarget.value = null
   } catch (e) {
-    settleErr.value = e.message || 'Failed to record settlement.'
+    settleErr.value = e.message || 'Failed to record.'
   } finally {
     settleBusy.value = false
   }
@@ -220,50 +269,63 @@ async function doSettle() {
 </script>
 
 <style scoped>
-/* Hero card */
+/* Hero */
 .hero-card { background: var(--primary); color: #fff; border: none; display: flex; justify-content: space-between; align-items: flex-start; }
-.hero-label { font-size: 13px; font-weight: 500; opacity: 0.8; margin-bottom: 4px; }
+.hero-label  { font-size: 13px; font-weight: 500; opacity: 0.8; margin-bottom: 4px; }
 .hero-amount { font-size: 2rem; font-weight: 800; }
-.hero-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.hero-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .avatar-stack { display: flex; flex-direction: row-reverse; }
 .stack-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.25); border: 2px solid var(--primary); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: -8px; }
 .stack-more { background: rgba(255,255,255,0.15); }
 .hero-sub { font-size: 11px; opacity: 0.7; }
-/* Filter chips */
-.filter-wrap { margin: 12px 0 4px; }
-.filter-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { padding: 5px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
-.chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* Chips */
+.filter-wrap   { margin: 12px 0 4px; }
+.filter-label  { font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
+.chips         { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip          { padding: 5px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.chip.active   { background: var(--primary); color: #fff; border-color: var(--primary); }
 /* Personal card */
-.personal-card { margin-bottom: 4px; }
-.personal-green { background: var(--success-light); border-color: #86efac; }
-.personal-red   { background: var(--danger-light);  border-color: #fca5a5; }
-.personal-gray  { background: var(--border);         border-color: var(--border); }
-.personal-icon { width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
-.personal-status { font-size: 15px; font-weight: 600; }
-.personal-section-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
-.personal-row { font-size: 13px; font-weight: 500; padding: 2px 0; }
+.personal-card    { margin-bottom: 4px; border-left: 3px solid var(--primary); }
+.personal-header  { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.personal-totals  { display: flex; gap: 6px; flex-wrap: wrap; }
+.pd-section-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.pd-row   { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 6px; padding: 2px 0; }
+.pd-name  { font-weight: 600; font-size: 13px; }
+.pd-total { font-weight: 700; font-size: 13px; }
+.pd-items { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Balance card */
-.balance-card { transition: border-color 0.15s; }
+.balance-card     { transition: border-color 0.15s; }
 .balance-selected { border-color: var(--primary); border-width: 2px; }
-.balance-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.balance-top      { display: flex; justify-content: space-between; align-items: flex-start; }
 .rm-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.balance-name { font-weight: 700; font-size: 15px; }
-.balance-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.balance-net-wrap { text-align: right; }
-.balance-net { font-size: 1.1rem; font-weight: 800; }
+.rm-avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+.balance-name  { font-weight: 700; font-size: 15px; }
+.balance-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.balance-net-wrap  { text-align: right; }
+.balance-net       { font-size: 1.1rem; font-weight: 800; }
 .balance-net-label { font-size: 11px; font-weight: 500; }
 .net-pos  { color: var(--success); }
 .net-neg  { color: var(--danger); }
 .net-zero { color: var(--text-muted); }
-.dues-row { font-size: 13px; font-weight: 500; padding: 2px 0; }
-.dues-owes { color: var(--danger); }
-.dues-owed { color: var(--success); }
-/* Consolidated settlement */
-.settlement-row-card {}
-.settle-from { color: var(--danger); }
-.settle-arrow { color: var(--text-muted); }
-.settle-to   { color: var(--success); }
-.settle-amount { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+/* Dues sections */
+.dues-header { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.dues-person { margin-bottom: 6px; }
+.dues-person-row { display: flex; justify-content: space-between; align-items: center; }
+.dues-person-name { font-weight: 600; font-size: 13px; }
+.dues-person-amt  { font-weight: 700; font-size: 13px; }
+.dues-item { font-size: 12px; color: var(--text-muted); padding-left: 8px; }
+.dues-dot { margin-right: 3px; }
+/* Debt groups */
+.debt-group-card { }
+.dg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.dg-pair   { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dg-arrow  { font-size: 12px; color: var(--text-muted); }
+.dg-total  { font-size: 1.05rem; }
+.dg-item   { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.dg-item:last-child { border-bottom: none; }
+/* Colours */
+.green-label { color: var(--success); }
+.red-label   { color: var(--danger); }
+.green-text  { color: var(--success); }
+.red-text    { color: var(--danger); }
 </style>

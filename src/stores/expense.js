@@ -6,9 +6,8 @@ import { supabase, isConfigured } from '@/lib/supabase'
 // All DB reads/writes must use these exact names
 
 function generateId() {
-  const arr = new Uint32Array(2)
-  crypto.getRandomValues(arr)
-  return ((arr[0] & 0x1FFFFF) * 2 ** 32 + arr[1]) || 1
+  // Stay within Number.MAX_SAFE_INTEGER so IDs never lose precision
+  return String(Math.floor(Math.random() * 9007199254740991) + 1)
 }
 
 export const useExpenseStore = defineStore('expense', () => {
@@ -77,11 +76,12 @@ export const useExpenseStore = defineStore('expense', () => {
     loading.value = true
     error.value = null
     try {
+      // Cast all bigint IDs to text so JavaScript never loses precision on large IDs
       const [{ data: rm, error: rmErr }, { data: exp, error: expErr }, { data: sp, error: spErr }] =
         await Promise.all([
-          supabase.from('roommates').select('*').order('name'),
-          supabase.from('expenses').select('*').order('date', { ascending: false }),
-          supabase.from('expense_splits').select('*')
+          supabase.from('roommates').select('id::text, name').order('name'),
+          supabase.from('expenses').select('id::text, title, amount, "payerId"::text, date').order('date', { ascending: false }),
+          supabase.from('expense_splits').select('id::text, "expenseId"::text, "roommateId"::text, amount')
         ])
 
       if (rmErr) throw rmErr
@@ -159,7 +159,7 @@ export const useExpenseStore = defineStore('expense', () => {
     if (expErr) throw expErr
 
     if (!isNew) {
-      await supabase.from('expense_splits').delete().eq('expenseId', expId)
+      await supabase.from('expense_splits').delete().eq('expenseId', String(expId))
     }
 
     let splits
@@ -192,17 +192,23 @@ export const useExpenseStore = defineStore('expense', () => {
   }
 
   async function deleteExpense(id) {
-    if (!isAdmin.value || !supabase) return
-    await supabase.from('expense_splits').delete().eq('expenseId', id)
-    await supabase.from('expenses').delete().eq('id', id)
+    if (!supabase) throw new Error('Supabase not configured')
+    if (!isAdmin.value) throw new Error('Only admin can delete expenses')
+    const { error: spErr } = await supabase.from('expense_splits').delete().eq('expenseId', String(id))
+    if (spErr) throw spErr
+    const { error: expErr } = await supabase.from('expenses').delete().eq('id', String(id))
+    if (expErr) throw expErr
     await loadData()
   }
 
   async function deleteExpenses(ids) {
-    if (!isAdmin.value || !supabase) return
+    if (!supabase) throw new Error('Supabase not configured')
+    if (!isAdmin.value) throw new Error('Only admin can delete expenses')
     for (const id of ids) {
-      await supabase.from('expense_splits').delete().eq('expenseId', id)
-      await supabase.from('expenses').delete().eq('id', id)
+      const { error: spErr } = await supabase.from('expense_splits').delete().eq('expenseId', String(id))
+      if (spErr) throw spErr
+      const { error: expErr } = await supabase.from('expenses').delete().eq('id', String(id))
+      if (expErr) throw expErr
     }
     await loadData()
   }

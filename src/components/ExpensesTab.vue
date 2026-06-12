@@ -100,10 +100,11 @@
         <div v-if="confirmDel?.id === exp.id" class="delete-confirm">
           <span>Delete "{{ exp.title }}"?</span>
           <button class="btn btn-danger btn-sm" :disabled="delBusy" @click.stop="doDelete(exp.id)">
-            {{ delBusy ? '…' : 'Delete' }}
+            {{ delBusy ? 'Deleting…' : 'Confirm Delete' }}
           </button>
-          <button class="btn btn-ghost btn-sm" @click.stop="confirmDel = null">Cancel</button>
+          <button class="btn btn-ghost btn-sm" @click.stop="confirmDel = null; delErr = ''">Cancel</button>
         </div>
+        <div v-if="delErr && confirmDel?.id === exp.id" class="error-banner" style="margin-top:6px">{{ delErr }}</div>
       </template>
     </div>
 
@@ -122,6 +123,7 @@ const expandedId = ref(null)
 const panelOpen = ref(false)
 const editTarget = ref(null)
 const confirmDel = ref(null)
+const delErr = ref('')
 const delBusy = ref(false)
 const multiSelect = ref(false)
 const selectedIds = reactive(new Set())
@@ -155,10 +157,13 @@ function rmName(id) { return store.roommates.find(r => r.id === id)?.name || '?'
 
 async function doDelete(id) {
   delBusy.value = true
+  delErr.value = ''
   try {
     await store.deleteExpense(id)
     confirmDel.value = null
     expandedId.value = null
+  } catch (e) {
+    delErr.value = e.message || 'Delete failed.'
   } finally { delBusy.value = false }
 }
 

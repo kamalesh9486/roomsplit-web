@@ -11,75 +11,92 @@
           <label>Title</label>
           <input v-model="form.title" class="input" placeholder="e.g. Groceries, Rent…" />
         </div>
-
         <div class="form-group">
           <label>Total Amount (₹)</label>
-          <input v-model.number="form.amount" class="input" type="number" min="0" step="0.01" placeholder="0.00" @input="onAmountChange" />
+          <input v-model.number="form.amount" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
         </div>
-
         <div class="form-group">
           <label>Paid by</label>
           <select v-model="form.payerId" class="input">
             <option v-for="r in store.roommates" :key="r.id" :value="r.id">{{ r.name }}</option>
           </select>
         </div>
-
         <div class="form-group">
           <label>Date</label>
           <input v-model="form.dateStr" class="input" type="date" />
         </div>
 
-        <!-- Split method -->
+        <!-- Split method tabs -->
         <div class="form-group">
           <label>Split Method</label>
           <div class="split-tabs">
             <button v-for="t in splitTypes" :key="t.id" class="split-tab" :class="{ active: splitType === t.id }" @click="changeSplitType(t.id)">
-              {{ t.label }}
+              <span class="tab-icon">{{ t.icon }}</span>{{ t.label }}
             </button>
           </div>
         </div>
 
-        <!-- Split section -->
+        <!-- Split body -->
         <div v-if="store.roommates.length" class="split-section">
 
-          <!-- Equally -->
-          <template v-if="splitType === 'equal'">
-            <div class="split-header">Even split — ₹{{ fa(equalAmt) }} per person</div>
-            <div v-for="r in store.roommates" :key="r.id" class="split-preview-row">
-              <span>{{ r.name }}</span><span>₹{{ fa(equalAmt) }}</span>
+          <!-- ① Equal All -->
+          <template v-if="splitType === 'equal-all'">
+            <div class="split-info">All {{ store.roommates.length }} members · ₹{{ fa(equalAllAmt) }} each</div>
+            <div v-for="r in store.roommates" :key="r.id" class="split-row-preview">
+              <div class="row" style="gap:8px">
+                <div class="mini-avatar">{{ r.name[0].toUpperCase() }}</div>
+                <span>{{ r.name }}</span>
+              </div>
+              <span class="fw">₹{{ fa(equalAllAmt) }}</span>
             </div>
           </template>
 
-          <!-- Exact Amounts -->
-          <template v-else-if="splitType === 'exact'">
-            <div v-for="(s, i) in splitInputs" :key="s.roommateId" class="split-input-row">
-              <span class="split-name">{{ s.name }}</span>
+          <!-- ② Equal Select -->
+          <template v-else-if="splitType === 'equal-select'">
+            <div class="split-info">
+              {{ selectedCount }} of {{ store.roommates.length }} included
+              <span v-if="selectedCount > 0"> · ₹{{ fa(equalSelectAmt) }} each</span>
+            </div>
+            <div
+              v-for="r in store.roommates" :key="r.id"
+              class="toggle-row" :class="{ included: selected.has(r.id) }"
+              @click="togglePerson(r.id)"
+            >
+              <div class="row" style="gap:8px">
+                <div class="toggle-box" :class="{ checked: selected.has(r.id) }">
+                  <span v-if="selected.has(r.id)">✓</span>
+                </div>
+                <div class="mini-avatar" :class="{ muted: !selected.has(r.id) }">{{ r.name[0].toUpperCase() }}</div>
+                <span :class="{ 'name-excluded': !selected.has(r.id) }">{{ r.name }}</span>
+                <span v-if="!selected.has(r.id)" class="excl-badge">excluded</span>
+              </div>
+              <span :class="selected.has(r.id) ? 'fw' : 'muted-text'">
+                {{ selected.has(r.id) ? `₹${fa(equalSelectAmt)}` : '—' }}
+              </span>
+            </div>
+            <div v-if="selectedCount === 0" class="split-bar bar-err">Select at least one person.</div>
+          </template>
+
+          <!-- ③ Custom -->
+          <template v-else>
+            <div class="split-info">Enter exact ₹ amount per person</div>
+            <div v-for="(s, i) in splitInputs" :key="s.roommateId" class="custom-row">
+              <div class="row" style="gap:8px;flex:1">
+                <div class="mini-avatar">{{ s.name[0].toUpperCase() }}</div>
+                <span class="split-name">{{ s.name }}</span>
+              </div>
               <div class="split-field">
                 <span class="split-sym">₹</span>
                 <input v-model.number="splitInputs[i].amount" class="input split-num" type="number" min="0" step="0.01" />
               </div>
             </div>
-            <div class="split-bar" :class="splitValid ? 'bar-ok' : 'bar-err'">
+            <div class="split-bar" :class="customValid ? 'bar-ok' : 'bar-err'">
               Sum ₹{{ fa(splitSum) }} of ₹{{ fa(form.amount || 0) }}
-              <span v-if="!splitValid"> — ₹{{ fa(Math.abs((form.amount || 0) - splitSum)) }} remaining</span>
-              <span v-else> ✓</span>
-            </div>
-          </template>
-
-          <!-- Percentage -->
-          <template v-else>
-            <div v-for="(s, i) in splitInputs" :key="s.roommateId" class="split-input-row">
-              <span class="split-name">{{ s.name }}</span>
-              <div class="split-field">
-                <input v-model.number="splitInputs[i].percent" class="input split-num" type="number" min="0" max="100" step="0.1" @input="onPctChange(i)" />
-                <span class="split-sym">%</span>
-              </div>
-              <span class="split-calc">= ₹{{ fa(splitInputs[i].amount) }}</span>
-            </div>
-            <div class="split-bar" :class="pctValid ? 'bar-ok' : 'bar-err'">
-              Sum {{ fa(splitPctSum) }}% of 100%
-              <span v-if="!pctValid"> — {{ fa(Math.abs(100 - splitPctSum)) }}% remaining</span>
-              <span v-else> ✓</span>
+              <span v-if="!customValid">
+                — ₹{{ fa(Math.abs((form.amount || 0) - splitSum)) }}
+                {{ splitSum < (form.amount || 0) ? 'unallocated' : 'over budget' }}
+              </span>
+              <span v-else> ✓ balanced</span>
             </div>
           </template>
 
@@ -90,7 +107,7 @@
 
       <div class="panel-footer">
         <button class="btn btn-ghost" @click="$emit('close')">Cancel</button>
-        <button class="btn btn-primary" :disabled="busy || !splitValid" @click="submit">
+        <button class="btn btn-primary" :disabled="busy || !isValid" @click="submit">
           <span v-if="busy" class="spinner"></span>
           {{ busy ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Expense' }}
         </button>
@@ -100,103 +117,113 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useExpenseStore } from '@/stores/expense'
 
 const props = defineProps({ expense: { type: Object, default: null } })
-const emit = defineEmits(['close'])
+const emit  = defineEmits(['close'])
 const store = useExpenseStore()
 const isEdit = computed(() => !!props.expense)
 
 const today = new Date().toISOString().split('T')[0]
 const form = ref({ title: '', amount: '', payerId: store.currentUser?.id || store.roommates[0]?.id, dateStr: today })
-const splitType = ref('equal')
+const splitType   = ref('equal-all')
+const selected    = ref(new Set(store.roommates.map(r => r.id)))
 const splitInputs = ref([])
 const busy = ref(false)
-const err = ref('')
+const err  = ref('')
 
 const splitTypes = [
-  { id: 'equal',   label: 'Equally' },
-  { id: 'exact',   label: 'Exact Amounts' },
-  { id: 'percent', label: 'Percentage' }
+  { id: 'equal-all',    icon: '⚖️', label: 'Equal All' },
+  { id: 'equal-select', icon: '✅', label: 'Equal Select' },
+  { id: 'custom',       icon: '✏️', label: 'Custom' }
 ]
 
-const n = computed(() => store.roommates.length)
-const equalAmt    = computed(() => n.value > 0 ? Number(form.value.amount || 0) / n.value : 0)
-const splitSum    = computed(() => splitInputs.value.reduce((s, x) => s + Number(x.amount || 0), 0))
-const splitPctSum = computed(() => splitInputs.value.reduce((s, x) => s + Number(x.percent || 0), 0))
-const pctValid    = computed(() => Math.abs(splitPctSum.value - 100) < 0.01)
-const splitValid  = computed(() => {
-  if (splitType.value === 'equal')   return true
-  if (splitType.value === 'exact')   return Math.abs(splitSum.value - Number(form.value.amount || 0)) < 0.01
-  return pctValid.value
+const selectedCount  = computed(() => selected.value.size)
+const equalAllAmt    = computed(() => store.roommates.length > 0 ? Number(form.value.amount || 0) / store.roommates.length : 0)
+const equalSelectAmt = computed(() => selectedCount.value > 0 ? Number(form.value.amount || 0) / selectedCount.value : 0)
+const splitSum       = computed(() => splitInputs.value.reduce((s, x) => s + Number(x.amount || 0), 0))
+const customValid    = computed(() => Math.abs(splitSum.value - Number(form.value.amount || 0)) < 0.01)
+
+const isValid = computed(() => {
+  if (splitType.value === 'equal-all')    return true
+  if (splitType.value === 'equal-select') return selectedCount.value > 0
+  return customValid.value
 })
 
 function fa(v) { return Number(v).toFixed(2) }
 
-function buildSplits(amt) {
-  const ea  = n.value > 0 ? parseFloat((amt / n.value).toFixed(2)) : 0
-  const pct = n.value > 0 ? parseFloat((100 / n.value).toFixed(4)) : 0
-  return store.roommates.map(r => ({ roommateId: r.id, name: r.name, amount: ea, percent: pct }))
+function togglePerson(id) {
+  const s = new Set(selected.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selected.value = s
 }
 
-function resetSplits() { splitInputs.value = buildSplits(Number(form.value.amount || 0)) }
-
-function changeSplitType(type) { splitType.value = type; resetSplits() }
-
-function onAmountChange() {
-  if (splitType.value === 'equal') return
+function buildCustomInputs() {
   const amt = Number(form.value.amount || 0)
-  splitInputs.value = splitInputs.value.map(s => ({
-    ...s,
-    amount: parseFloat((Number(s.percent || 0) / 100 * amt).toFixed(2))
-  }))
+  const ea  = store.roommates.length > 0 ? parseFloat((amt / store.roommates.length).toFixed(2)) : 0
+  splitInputs.value = store.roommates.map(r => ({ roommateId: r.id, name: r.name, amount: ea }))
 }
 
-function onPctChange(i) {
-  const amt = Number(form.value.amount || 0)
-  splitInputs.value[i].amount = parseFloat((Number(splitInputs.value[i].percent || 0) / 100 * amt).toFixed(2))
+function changeSplitType(type) {
+  splitType.value = type
+  if (type === 'equal-select') selected.value = new Set(store.roommates.map(r => r.id))
+  if (type === 'custom')       buildCustomInputs()
 }
 
 onMounted(() => {
   if (props.expense) {
     form.value = {
-      title: props.expense.title,
-      amount: props.expense.amount,
+      title: props.expense.title, amount: props.expense.amount,
       payerId: props.expense.payerId,
       dateStr: new Date(props.expense.date).toISOString().split('T')[0]
     }
-    splitType.value = 'exact'
-    splitInputs.value = store.roommates.map(r => {
-      const ex = props.expense.splits?.find(s => s.roommateId === r.id)
-      return { roommateId: r.id, name: r.name, amount: ex?.amount ?? 0, percent: 0 }
-    })
-  } else {
-    resetSplits()
+    const splits  = props.expense.splits || []
+    const allIds  = new Set(store.roommates.map(r => r.id))
+    const splitIds = new Set(splits.map(s => s.roommateId))
+    const first   = splits[0]?.amount ?? 0
+    const allEqual = splits.length > 0 && splits.every(s => Math.abs(s.amount - first) < 0.01)
+
+    if (allEqual && splitIds.size === allIds.size) {
+      splitType.value = 'equal-all'
+    } else if (allEqual && splitIds.size < allIds.size) {
+      splitType.value = 'equal-select'
+      selected.value  = splitIds
+    } else {
+      splitType.value   = 'custom'
+      splitInputs.value = store.roommates.map(r => {
+        const ex = splits.find(s => s.roommateId === r.id)
+        return { roommateId: r.id, name: r.name, amount: ex?.amount ?? 0 }
+      })
+    }
   }
 })
 
-watch(() => form.value.amount, () => { if (splitType.value !== 'equal') onAmountChange() })
-
 async function submit() {
   err.value = ''
-  if (!form.value.title.trim())                    { err.value = 'Title is required.'; return }
-  if (!form.value.amount || Number(form.value.amount) <= 0) { err.value = 'Enter a valid amount.'; return }
-  if (!form.value.payerId)                          { err.value = 'Select who paid.'; return }
-  if (!splitValid.value) {
-    err.value = splitType.value === 'percent'
-      ? 'Percentages must add up to 100%.'
-      : 'Split amounts must add up to the total.'
-    return
-  }
+  if (!form.value.title.trim())                                               { err.value = 'Title is required.';              return }
+  if (!form.value.amount || Number(form.value.amount) <= 0)                   { err.value = 'Enter a valid amount.';            return }
+  if (!form.value.payerId)                                                     { err.value = 'Select who paid.';                return }
+  if (splitType.value === 'equal-select' && selectedCount.value === 0)        { err.value = 'Select at least one person.';     return }
+  if (splitType.value === 'custom' && !customValid.value)                     { err.value = 'Amounts must add up to the total.'; return }
+
   busy.value = true
   try {
-    const customSplits = splitType.value === 'equal' ? null
-      : splitInputs.value.map(s => ({ roommateId: s.roommateId, amount: Number(s.amount) }))
+    const amt = Number(form.value.amount)
+    let customSplits = null
+
+    if (splitType.value === 'equal-select') {
+      const perPerson = parseFloat((amt / selectedCount.value).toFixed(2))
+      customSplits = store.roommates
+        .filter(r => selected.value.has(r.id))
+        .map(r => ({ roommateId: r.id, amount: perPerson }))
+    } else if (splitType.value === 'custom') {
+      customSplits = splitInputs.value.map(s => ({ roommateId: s.roommateId, amount: Number(s.amount) }))
+    }
+
     await store.saveExpense({
       id: props.expense?.id || null,
-      title: form.value.title.trim(),
-      amount: Number(form.value.amount),
+      title: form.value.title.trim(), amount: amt,
       payerId: form.value.payerId,
       date: new Date(form.value.dateStr).getTime(),
       customSplits
@@ -211,18 +238,37 @@ async function submit() {
 </script>
 
 <style scoped>
+/* Tabs */
 .split-tabs { display: flex; gap: 4px; }
-.split-tab { flex: 1; padding: 7px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.split-tab { flex: 1; padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .split-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-.split-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 7px; }
-.split-header { font-size: 12px; font-weight: 600; color: var(--primary); }
-.split-preview-row { display: flex; justify-content: space-between; font-size: 13px; }
-.split-input-row { display: flex; align-items: center; gap: 8px; }
-.split-name { flex: 1; font-size: 13px; }
+.tab-icon { font-size: 18px; line-height: 1; }
+/* Split section wrapper */
+.split-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.split-info { font-size: 12px; font-weight: 600; color: var(--primary); padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+/* Equal All */
+.split-row-preview { display: flex; justify-content: space-between; align-items: center; padding: 5px 2px; font-size: 13px; }
+/* Equal Select toggle rows */
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border); transition: all 0.15s; }
+.toggle-row.included { background: var(--primary-light); border-color: #86efac; }
+.toggle-row:not(.included) { opacity: 0.6; }
+.toggle-row:hover { opacity: 1; border-color: var(--primary); }
+.toggle-box { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; transition: all 0.15s; }
+.toggle-box.checked { background: var(--primary); border-color: var(--primary); color: #fff; }
+.name-excluded { color: var(--text-muted); text-decoration: line-through; }
+.excl-badge { font-size: 10px; background: var(--border); color: var(--text-muted); padding: 1px 6px; border-radius: 99px; }
+/* Custom split */
+.custom-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.split-name { font-size: 13px; flex: 1; }
 .split-field { display: flex; align-items: center; gap: 4px; }
 .split-sym { font-size: 13px; color: var(--text-muted); }
-.split-num { width: 88px; padding: 5px 8px; text-align: right; }
-.split-calc { font-size: 12px; color: var(--text-muted); min-width: 72px; text-align: right; }
+.split-num { width: 90px; padding: 5px 8px; text-align: right; }
+/* Mini avatar */
+.mini-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mini-avatar.muted { opacity: 0.35; }
+/* Misc */
+.fw { font-weight: 600; font-size: 13px; }
+.muted-text { color: var(--text-muted); font-size: 13px; }
 .split-bar { font-size: 12px; font-weight: 500; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
 .bar-ok  { color: var(--success); }
 .bar-err { color: var(--danger); }

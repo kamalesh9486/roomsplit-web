@@ -55,7 +55,7 @@
 
         <div class="exp-info">
           <div class="exp-title">{{ exp.title }}</div>
-          <div class="exp-meta">Paid by {{ payerName(exp.payer_id) }} · {{ fmtDate(exp.date) }}</div>
+          <div class="exp-meta">Paid by {{ payerName(exp.payerId) }} · {{ fmtDate(exp.date) }}</div>
         </div>
 
         <div class="exp-amount">₹{{ fmt(exp.amount) }}</div>
@@ -73,20 +73,20 @@
         </div>
 
         <!-- Each participant row: payer highlighted, others show who they owe -->
-        <div v-for="s in exp.splits" :key="s.id" class="participant-row" :class="{ 'is-payer': s.roommate_id === exp.payer_id }">
+        <div v-for="s in exp.splits" :key="s.id" class="participant-row" :class="{ 'is-payer': s.roommateId === exp.payerId }">
           <div class="part-left">
-            <div class="part-avatar" :class="{ 'part-avatar-payer': s.roommate_id === exp.payer_id }">
-              {{ rmName(s.roommate_id).slice(0,2).toUpperCase() }}
+            <div class="part-avatar" :class="{ 'part-avatar-payer': s.roommateId === exp.payerId }">
+              {{ rmName(s.roommateId).slice(0,2).toUpperCase() }}
             </div>
             <div>
-              <div class="part-name">{{ rmName(s.roommate_id) }}</div>
+              <div class="part-name">{{ rmName(s.roommateId) }}</div>
               <div class="part-sub">
-                <span v-if="s.roommate_id === exp.payer_id" class="badge-paid">Paid the bill</span>
-                <span v-else class="part-owes">owes ₹{{ fmt(s.amount) }} → {{ payerName(exp.payer_id) }}</span>
+                <span v-if="s.roommateId === exp.payerId" class="badge-paid">Paid the bill</span>
+                <span v-else class="part-owes">owes ₹{{ fmt(s.amount) }} → {{ payerName(exp.payerId) }}</span>
               </div>
             </div>
           </div>
-          <span class="part-amount" :class="s.roommate_id === exp.payer_id ? 'amount-paid' : 'amount-owes'">
+          <span class="part-amount" :class="s.roommateId === exp.payerId ? 'amount-paid' : 'amount-owes'">
             ₹{{ fmt(s.amount) }}
           </span>
         </div>

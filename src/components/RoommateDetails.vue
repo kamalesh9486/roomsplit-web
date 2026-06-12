@@ -77,10 +77,10 @@ const owedByMap = computed(() => {
   const map = {}
   for (const r of otherRoommates.value) map[r.id] = []
   for (const exp of store.expenses) {
-    if (exp.payer_id !== rid.value) continue
+    if (exp.payerId !== rid.value) continue
     for (const split of (exp.splits || [])) {
-      if (split.roommate_id !== rid.value && split.amount > 0.01 && map[split.roommate_id]) {
-        map[split.roommate_id].push({ amount: split.amount, title: exp.title })
+      if (split.roommateId !== rid.value && split.amount > 0.01 && map[split.roommateId]) {
+        map[split.roommateId].push({ amount: split.amount, title: exp.title })
       }
     }
   }
@@ -92,10 +92,10 @@ const owedToMap = computed(() => {
   const map = {}
   for (const r of otherRoommates.value) map[r.id] = []
   for (const exp of store.expenses) {
-    if (exp.payer_id === rid.value) continue
+    if (exp.payerId === rid.value) continue
     for (const split of (exp.splits || [])) {
-      if (split.roommate_id === rid.value && split.amount > 0.01 && map[exp.payer_id]) {
-        map[exp.payer_id].push({ amount: split.amount, title: exp.title })
+      if (split.roommateId === rid.value && split.amount > 0.01 && map[exp.payerId]) {
+        map[exp.payerId].push({ amount: split.amount, title: exp.title })
       }
     }
   }

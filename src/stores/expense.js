@@ -2,10 +2,12 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase, isConfigured } from '@/lib/supabase'
 
+// Supabase columns are camelCase: payerId, expenseId, roommateId
+// All DB reads/writes must use these exact names
+
 function generateId() {
   const arr = new Uint32Array(2)
   crypto.getRandomValues(arr)
-  // Keep within JS safe integer range
   return ((arr[0] & 0x1FFFFF) * 2 ** 32 + arr[1]) || 1
 }
 
@@ -25,35 +27,34 @@ export const useExpenseStore = defineStore('expense', () => {
   const balances = computed(() =>
     roommates.value.map(roommate => {
       const totalPaid = expenses.value
-        .filter(e => e.payer_id === roommate.id)
+        .filter(e => e.payerId === roommate.id)
         .reduce((s, e) => s + e.amount, 0)
 
       const totalOwed = expenses.value
         .flatMap(e => e.splits || [])
-        .filter(s => s.roommate_id === roommate.id)
+        .filter(s => s.roommateId === roommate.id)
         .reduce((s, sp) => s + sp.amount, 0)
 
       return { roommate, totalPaid, totalOwed, netBalance: totalPaid - totalOwed }
     })
   )
 
-  // Raw per-expense debts — each entry is one split relationship, never netted
-  // fromId owes toId (amount) because of (title) on (date)
+  // Raw per-expense debts — one entry per split, never netted or merged
   const settlements = computed(() => {
     const transfers = []
     for (const expense of expenses.value) {
-      const payer = roommates.value.find(r => r.id === expense.payer_id)
+      const payer = roommates.value.find(r => r.id === expense.payerId)
       if (!payer) continue
       for (const split of (expense.splits || [])) {
-        if (split.roommate_id !== expense.payer_id && split.amount > 0.01) {
-          const debtor = roommates.value.find(r => r.id === split.roommate_id)
+        if (split.roommateId !== expense.payerId && split.amount > 0.01) {
+          const debtor = roommates.value.find(r => r.id === split.roommateId)
           if (!debtor) continue
           transfers.push({
-            fromId:   debtor.id, fromName: debtor.name,
-            toId:     payer.id,  toName:   payer.name,
-            amount:   split.amount,
-            title:    expense.title,
-            date:     expense.date,
+            fromId:    debtor.id,  fromName: debtor.name,
+            toId:      payer.id,   toName:   payer.name,
+            amount:    split.amount,
+            title:     expense.title,
+            date:      expense.date,
             expenseId: expense.id
           })
         }
@@ -65,7 +66,7 @@ export const useExpenseStore = defineStore('expense', () => {
   // True if a roommate has any expense or split history
   function roommateHasHistory(id) {
     return expenses.value.some(e =>
-      e.payer_id === id || (e.splits || []).some(s => s.roommate_id === id)
+      e.payerId === id || (e.splits || []).some(s => s.roommateId === id)
     )
   }
 
@@ -89,10 +90,11 @@ export const useExpenseStore = defineStore('expense', () => {
 
       roommates.value = rm || []
 
+      // Group splits by expenseId (camelCase — matches Supabase column)
       const byExpense = {}
       for (const s of (sp || [])) {
-        if (!byExpense[s.expense_id]) byExpense[s.expense_id] = []
-        byExpense[s.expense_id].push(s)
+        if (!byExpense[s.expenseId]) byExpense[s.expenseId] = []
+        byExpense[s.expenseId].push(s)
       }
 
       expenses.value = (exp || []).map(e => ({ ...e, splits: byExpense[e.id] || [] }))
@@ -150,24 +152,25 @@ export const useExpenseStore = defineStore('expense', () => {
     const isNew = !id
     const expId = isNew ? generateId() : id
 
+    // Column name is camelCase: payerId
     const { error: expErr } = await supabase.from('expenses').upsert({
-      id: expId, title, amount, payer_id: payerId, date
+      id: expId, title, amount, payerId, date
     })
     if (expErr) throw expErr
 
     if (!isNew) {
-      await supabase.from('expense_splits').delete().eq('expense_id', expId)
+      await supabase.from('expense_splits').delete().eq('expenseId', expId)
     }
 
     let splits
     if (customSplits) {
       splits = customSplits.map(s => ({
-        id: generateId(), expense_id: expId, roommate_id: s.roommateId, amount: s.amount
+        id: generateId(), expenseId: expId, roommateId: s.roommateId, amount: s.amount
       }))
     } else {
       const splitAmount = parseFloat((amount / roommates.value.length).toFixed(2))
       splits = roommates.value.map(r => ({
-        id: generateId(), expense_id: expId, roommate_id: r.id, amount: splitAmount
+        id: generateId(), expenseId: expId, roommateId: r.id, amount: splitAmount
       }))
     }
 
@@ -190,7 +193,7 @@ export const useExpenseStore = defineStore('expense', () => {
 
   async function deleteExpense(id) {
     if (!isAdmin.value || !supabase) return
-    await supabase.from('expense_splits').delete().eq('expense_id', id)
+    await supabase.from('expense_splits').delete().eq('expenseId', id)
     await supabase.from('expenses').delete().eq('id', id)
     await loadData()
   }
@@ -198,7 +201,7 @@ export const useExpenseStore = defineStore('expense', () => {
   async function deleteExpenses(ids) {
     if (!isAdmin.value || !supabase) return
     for (const id of ids) {
-      await supabase.from('expense_splits').delete().eq('expense_id', id)
+      await supabase.from('expense_splits').delete().eq('expenseId', id)
       await supabase.from('expenses').delete().eq('id', id)
     }
     await loadData()

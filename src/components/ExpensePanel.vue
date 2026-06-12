@@ -163,12 +163,12 @@ onMounted(() => {
     form.value = {
       title: props.expense.title,
       amount: props.expense.amount,
-      payerId: props.expense.payer_id,
+      payerId: props.expense.payerId,
       dateStr: new Date(props.expense.date).toISOString().split('T')[0]
     }
     splitType.value = 'exact'
     splitInputs.value = store.roommates.map(r => {
-      const ex = props.expense.splits?.find(s => s.roommate_id === r.id)
+      const ex = props.expense.splits?.find(s => s.roommateId === r.id)
       return { roommateId: r.id, name: r.name, amount: ex?.amount ?? 0, percent: 0 }
     })
   } else {

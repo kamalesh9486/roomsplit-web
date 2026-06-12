@@ -103,57 +103,6 @@
       </button>
     </div>
 
-    <!-- All outstanding debts — raw, one group per from→to pair -->
-    <template v-if="debtGroups.length">
-      <hr class="divider" />
-      <div class="section-header">
-        <h2>All Outstanding Debts</h2>
-        <span class="badge badge-red">{{ debtGroups.length }} debt{{ debtGroups.length !== 1 ? 's' : '' }}</span>
-      </div>
-      <div v-for="g in debtGroups" :key="`${g.fromId}-${g.toId}`" class="card debt-group-card">
-        <div class="dg-header">
-          <div class="dg-pair">
-            <strong class="red-text">{{ g.fromName }}</strong>
-            <span class="dg-arrow">owes</span>
-            <strong class="green-text">{{ g.toName }}</strong>
-          </div>
-          <strong class="dg-total">₹{{ fmt(g.total) }}</strong>
-        </div>
-        <div v-for="(item, i) in g.items" :key="i" class="dg-item">
-          <span>{{ item.title }}</span>
-          <span>₹{{ fmt(item.amount) }}</span>
-        </div>
-        <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" @click="settleTarget = g">
-          ✓ Record Settlement (₹{{ fmt(g.total) }})
-        </button>
-      </div>
-    </template>
-
-    <!-- Settle confirmation panel -->
-    <div v-if="settleTarget" class="panel-overlay" @click.self="settleTarget = null">
-      <div class="panel" style="max-width:400px">
-        <div class="panel-header">
-          <h2>Record Settlement?</h2>
-          <button class="btn-icon" @click="settleTarget = null">✕</button>
-        </div>
-        <div class="panel-body">
-          <p style="color:var(--text);font-size:15px;line-height:1.6">
-            Record a payment of <strong>₹{{ fmt(settleTarget.total) }}</strong>
-            from <strong>{{ settleTarget.fromName }}</strong> to <strong>{{ settleTarget.toName }}</strong>
-            covering {{ settleTarget.items.length }} expense{{ settleTarget.items.length !== 1 ? 's' : '' }}.
-          </p>
-          <p v-if="settleErr" class="error-banner">{{ settleErr }}</p>
-        </div>
-        <div class="panel-footer">
-          <button class="btn btn-ghost" @click="settleTarget = null">Cancel</button>
-          <button class="btn btn-primary" :disabled="settleBusy" @click="doSettle">
-            <span v-if="settleBusy" class="spinner"></span>
-            {{ settleBusy ? 'Recording…' : 'Record' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
     <RoommateDetails v-if="detailsRoommate" :roommate="detailsRoommate" @close="detailsRoommate = null" />
   </div>
 </template>
@@ -166,24 +115,9 @@ import RoommateDetails from './RoommateDetails.vue'
 const store = useExpenseStore()
 const selectedId = ref(null)
 const detailsRoommate = ref(null)
-const settleTarget = ref(null)
-const settleBusy = ref(false)
-const settleErr = ref('')
 
 const grandTotal   = computed(() => store.balances.reduce((s, b) => s + b.totalPaid, 0))
 const selectedName = computed(() => store.roommates.find(r => r.id === selectedId.value)?.name || '')
-
-// Raw debts grouped by from→to pair (no netting — A→B and B→A are separate groups)
-const debtGroups = computed(() => {
-  const map = {}
-  for (const s of store.settlements) {
-    const key = `${s.fromId}→${s.toId}`
-    if (!map[key]) map[key] = { fromId: s.fromId, fromName: s.fromName, toId: s.toId, toName: s.toName, total: 0, items: [] }
-    map[key].total = parseFloat((map[key].total + s.amount).toFixed(2))
-    map[key].items.push({ title: s.title, amount: s.amount })
-  }
-  return Object.values(map).filter(g => g.total > 0.01)
-})
 
 // Personalized breakdown for selected person — raw, no netting
 const personalBreakdown = computed(() => {
@@ -240,19 +174,6 @@ function getOwesTo(b) {
 function netClass(n) { return n >= 0.01 ? 'net-pos' : n <= -0.01 ? 'net-neg' : 'net-zero' }
 function fmt(n)  { return Number(n) % 1 === 0 ? Number(n).toFixed(0) : Number(n).toFixed(2) }
 function fmtN(n) { return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
-
-async function doSettle() {
-  settleErr.value = ''
-  settleBusy.value = true
-  try {
-    await store.settleUp({ ...settleTarget.value, amount: settleTarget.value.total })
-    settleTarget.value = null
-  } catch (e) {
-    settleErr.value = e.message || 'Failed to record.'
-  } finally {
-    settleBusy.value = false
-  }
-}
 </script>
 
 <style scoped>
@@ -324,14 +245,6 @@ async function doSettle() {
 .green-pill .dues-pill-amount { color: var(--primary-bright); }
 .red-pill   .dues-pill-amount { color: var(--danger); }
 .dues-pill-count  { font-size: 11px; color: var(--text-muted); }
-/* Debt groups */
-.debt-group-card { background: var(--surface-low); }
-.dg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.dg-pair   { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.dg-arrow  { font-size: 11px; color: var(--text-muted); font-family: var(--font-display); font-weight: 600; }
-.dg-total  { font-size: 1.1rem; font-family: var(--font-display); font-weight: 800; }
-.dg-item   { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding: 5px 0; border-bottom: 1px solid var(--border); }
-.dg-item:last-child { border-bottom: none; }
 /* Colours */
 .green-label { color: var(--primary-bright); }
 .red-label   { color: var(--danger); }
@@ -365,8 +278,5 @@ async function doSettle() {
   .dues-pill { min-width: 0; flex: 1; padding: 8px 10px; }
   .dues-pill-amount { font-size: 0.9rem; }
 
-  /* Debt groups */
-  .dg-header { flex-direction: column; align-items: flex-start; gap: 4px; }
-  .dg-total  { font-size: 1rem; }
 }
 </style>

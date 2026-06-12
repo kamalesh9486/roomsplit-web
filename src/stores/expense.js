@@ -47,7 +47,9 @@ export const useExpenseStore = defineStore('expense', () => {
           const debtor = roommates.value.find(r => r.id === split.roommate_id)
           if (!debtor) continue
           transfers.push({
+            fromId: debtor.id,
             fromName: debtor.name,
+            toId: payer.id,
             toName: payer.name,
             amount: split.amount,
             title: expense.title,
@@ -104,6 +106,7 @@ export const useExpenseStore = defineStore('expense', () => {
   }
 
   async function registerAndLogin(name) {
+    if (!supabase) throw new Error('Supabase not configured')
     const id = generateId()
     const { error: e } = await supabase.from('roommates').insert({ id, name: name.trim() })
     if (e) throw e
@@ -117,6 +120,7 @@ export const useExpenseStore = defineStore('expense', () => {
   // ── Roommates ─────────────────────────────────────────────────────────────
 
   async function addRoommate(name) {
+    if (!supabase) throw new Error('Supabase not configured')
     const id = generateId()
     const { error: e } = await supabase.from('roommates').insert({ id, name: name.trim() })
     if (e) throw e
@@ -124,6 +128,7 @@ export const useExpenseStore = defineStore('expense', () => {
   }
 
   async function deleteRoommate(id) {
+    if (!supabase) throw new Error('Supabase not configured')
     const { error: e } = await supabase.from('roommates').delete().eq('id', id)
     if (e) throw e
     await loadData()
@@ -131,28 +136,32 @@ export const useExpenseStore = defineStore('expense', () => {
 
   // ── Expenses ──────────────────────────────────────────────────────────────
 
-  async function saveExpense({ id, title, amount, payerId, date }) {
+  // customSplits: [{roommateId, amount}] — if null, splits evenly across all roommates
+  async function saveExpense({ id, title, amount, payerId, date, customSplits = null }) {
+    if (!supabase) throw new Error('Supabase not configured')
     const isNew = !id
     const expId = isNew ? generateId() : id
-    const splitAmount = parseFloat((amount / roommates.value.length).toFixed(2))
 
-    // Upsert expense
     const { error: expErr } = await supabase.from('expenses').upsert({
       id: expId, title, amount, payer_id: payerId, date
     })
     if (expErr) throw expErr
 
-    // Replace splits
     if (!isNew) {
       await supabase.from('expense_splits').delete().eq('expense_id', expId)
     }
 
-    const splits = roommates.value.map(r => ({
-      id: generateId(),
-      expense_id: expId,
-      roommate_id: r.id,
-      amount: splitAmount
-    }))
+    let splits
+    if (customSplits) {
+      splits = customSplits.map(s => ({
+        id: generateId(), expense_id: expId, roommate_id: s.roommateId, amount: s.amount
+      }))
+    } else {
+      const splitAmount = parseFloat((amount / roommates.value.length).toFixed(2))
+      splits = roommates.value.map(r => ({
+        id: generateId(), expense_id: expId, roommate_id: r.id, amount: splitAmount
+      }))
+    }
 
     const { error: spErr } = await supabase.from('expense_splits').insert(splits)
     if (spErr) throw spErr
@@ -160,10 +169,30 @@ export const useExpenseStore = defineStore('expense', () => {
     await loadData()
   }
 
+  async function settleUp(settlement) {
+    await saveExpense({
+      id: null,
+      title: `Settlement: ${settlement.fromName} → ${settlement.toName}`,
+      amount: settlement.amount,
+      payerId: settlement.fromId,
+      date: Date.now(),
+      customSplits: [{ roommateId: settlement.toId, amount: settlement.amount }]
+    })
+  }
+
   async function deleteExpense(id) {
-    if (!isAdmin.value) return
+    if (!isAdmin.value || !supabase) return
     await supabase.from('expense_splits').delete().eq('expense_id', id)
     await supabase.from('expenses').delete().eq('id', id)
+    await loadData()
+  }
+
+  async function deleteExpenses(ids) {
+    if (!isAdmin.value || !supabase) return
+    for (const id of ids) {
+      await supabase.from('expense_splits').delete().eq('expense_id', id)
+      await supabase.from('expenses').delete().eq('id', id)
+    }
     await loadData()
   }
 
@@ -171,6 +200,6 @@ export const useExpenseStore = defineStore('expense', () => {
     roommates, expenses, currentUser, loading, error,
     isAdmin, balances, settlements,
     loadData, login, registerAndLogin, logout,
-    addRoommate, deleteRoommate, saveExpense, deleteExpense
+    addRoommate, deleteRoommate, saveExpense, settleUp, deleteExpense, deleteExpenses
   }
 })

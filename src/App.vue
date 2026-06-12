@@ -111,4 +111,11 @@ onMounted(() => store.loadData())
   color: var(--primary-bright);
 }
 .setup-hint { font-size: 12px; color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .brand-icon { width: 30px; height: 30px; font-size: 0.95rem; border-radius: 8px; }
+  .uname { display: none; }
+  .setup-card { padding: 0 4px; }
+  .setup-code { font-size: 11px; }
+}
 </style>

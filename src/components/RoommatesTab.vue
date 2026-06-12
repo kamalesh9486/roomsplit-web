@@ -143,4 +143,11 @@ async function add() {
 .warning-body { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 .warning-actions { display: flex; gap: 8px; }
 .err-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
+
+@media (max-width: 640px) {
+  .warning-actions { flex-wrap: wrap; }
+  .warning-actions .btn { flex: 1; justify-content: center; }
+  .delete-confirm { flex-wrap: wrap; }
+  .delete-confirm span { width: 100%; }
+}
 </style>

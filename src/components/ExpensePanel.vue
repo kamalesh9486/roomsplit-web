@@ -320,4 +320,13 @@ async function submit() {
 .split-bar { font-size: 12px; font-weight: 600; font-family: var(--font-display); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
 .bar-ok  { color: var(--primary-bright); }
 .bar-err { color: var(--danger); }
+
+@media (max-width: 640px) {
+  /* Input size 16px prevents iOS auto-zoom */
+  .split-num { font-size: 16px; width: 80px; }
+  .split-tab { font-size: 10px; padding: 8px 2px; }
+  .tab-icon { font-size: 14px; }
+  .toggle-row { padding: 10px 10px; }
+  .custom-row { gap: 6px; }
+}
 </style>

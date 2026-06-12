@@ -337,4 +337,36 @@ async function doSettle() {
 .red-label   { color: var(--danger); }
 .green-text  { color: var(--primary-bright); }
 .red-text    { color: var(--danger); }
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  /* Hero: stack on narrow */
+  .hero-card { flex-direction: column; gap: 14px; }
+  .hero-amount { font-size: 1.8rem; }
+  .hero-right { align-items: flex-start; flex-direction: row; justify-content: space-between; }
+
+  /* Chips: horizontal scroll */
+  .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+
+  /* Personal card */
+  .personal-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .pd-row { grid-template-columns: 1fr auto; }
+  .pd-items { display: none; }  /* hide expense detail, keep in View Details */
+
+  /* Balance card top */
+  .balance-top { gap: 10px; }
+  .balance-name { font-size: 14px; }
+  .balance-net  { font-size: 1rem; }
+
+  /* Dues pills: fill row */
+  .dues-summary { gap: 6px; }
+  .dues-pill { min-width: 0; flex: 1; padding: 8px 10px; }
+  .dues-pill-amount { font-size: 0.9rem; }
+
+  /* Debt groups */
+  .dg-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .dg-total  { font-size: 1rem; }
+}
 </style>

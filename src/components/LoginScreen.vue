@@ -130,4 +130,13 @@ async function register() {
 }
 .or-text { font-size: 11px; font-weight: 600; font-family: var(--font-display); color: var(--text-muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; }
 .login-err { color: var(--danger); font-size: 13px; }
+
+@media (max-width: 640px) {
+  .login-wrap { padding: 12px; align-items: flex-start; padding-top: 40px; }
+  .login-card { border-radius: var(--radius-lg); padding: 28px 20px; }
+  /* 16px input prevents iOS zoom */
+  .login-card .input { font-size: 16px; }
+  .roommate-btn { padding: 13px 14px; font-size: 15px; }
+  .logo-icon { width: 52px; height: 52px; }
+}
 </style>

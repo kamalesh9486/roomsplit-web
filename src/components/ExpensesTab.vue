@@ -209,4 +209,17 @@ async function bulkDelete() {
 .exp-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
 .delete-confirm { background: var(--danger-dim); border: 1px solid rgba(255,180,171,0.2); border-radius: var(--radius-sm); padding: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-top: 10px; color: var(--text-muted); }
 .delete-confirm span { flex: 1; min-width: 100px; }
+
+@media (max-width: 640px) {
+  .exp-title { font-size: 13px; }
+  .exp-amount { font-size: 1rem; }
+  .exp-actions { flex-wrap: wrap; gap: 6px; }
+  .exp-actions .btn { flex: 1; justify-content: center; }
+  .participant-row { padding: 7px 8px; }
+  .part-name { font-size: 12px; }
+  .part-owes { font-size: 10px; }
+  .part-amount { font-size: 12px; }
+  /* Admin toolbar wraps */
+  .admin-toolbar .row { flex-wrap: wrap; gap: 8px; }
+}
 </style>

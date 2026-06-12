@@ -173,4 +173,11 @@ function formula(list) {
 .owed-to-amt { color: var(--danger); }
 .detail-formula { font-size: 13px; font-weight: 500; color: var(--text-muted); font-family: var(--font-display); }
 .detail-contrib { font-size: 11px; color: var(--text-muted); margin-top: 4px; opacity: 0.7; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .identity-card { padding: 14px; gap: 12px; }
+  .id-avatar { width: 48px; height: 48px; font-size: 16px; }
+  .id-name { font-size: 1.05rem; }
+  .detail-card { padding: 12px; }
+}
 </style>
